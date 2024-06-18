@@ -2,7 +2,7 @@ const axios = require('axios')
 const cheerio = require('cheerio')
 const url = 'https://www.promiedos.com.ar/'
 
-// scorers será un string como el siguiente "25' M. Muldur; 65' A. Guler; 90(+7)' K. Akturkoglu;"
+// scorers example: "25' M. Muldur; 65' A. Guler; 90(+7)' K. Akturkoglu;"
 function getScorersList(scorers){
     const scorersList = scorers.split(';');
     scorersList.pop(); // Remove the last empty element
@@ -73,7 +73,7 @@ async function getTodayMatches(req, res) {
             }
         }
 
-        // nvp son partidos finalizados y vp son partidos en curso
+        // nvp are ended matches and vp are playing matches
         $('tr[name="nvp"], tr[name="vp"]').each(function () {
             processMatchRow(this);
         });
@@ -85,6 +85,71 @@ async function getTodayMatches(req, res) {
     }
 }
 
+async function getCompetitionCupMatches(req, res, competitionCupName) {
+    try {
+        const competitionUrl = `${url}${competitionCupName}`;
+        console.log(`Fetching URL: ${competitionUrl}`);
+
+        const response = await axios.get(competitionUrl);
+        const html = response.data;
+        const $ = cheerio.load(html);
+        const matches = [];
+
+        $('#tablapts .grupo').each(function () {
+            const group = $(this);
+            const groupName = group.find('.titulotabla2').text().trim().split(' ')[1];
+
+            const groupMatches = [];
+
+            group.find('#fixgrupo').each(function () {
+                const matchDay = $(this);
+                const fecha = matchDay.find('.fechagrupo').text().trim().split(' ')[1];
+
+                matchDay.find('.grtr').each(function () {
+                    const match = $(this);
+                    const homeTeam = match.find('.greq1').text().trim();
+                    const awayTeam = match.find('.greq2').text().trim();
+                    const score = match.find('.grres4').text().trim();
+
+                    if (homeTeam && awayTeam && score) {
+                        groupMatches.push({
+                            matchDay: fecha,
+                            homeTeam,
+                            awayTeam,
+                            score
+                        });
+                    } else {
+                        const homeTeamPending = match.find('.greq1').text().trim();
+                        const awayTeamPending = match.find('.greq2').text().trim();
+                        const pendingScore = match.find('.grres0').text().trim();
+
+                        if (homeTeamPending && awayTeamPending && pendingScore) {
+                            groupMatches.push({
+                                matchDay: fecha,
+                                homeTeam: homeTeamPending,
+                                awayTeam: awayTeamPending,
+                                score: 'Pending'
+                            });
+                        }
+                    }
+                });
+            });
+
+            if (groupMatches.length > 0) {
+                matches.push({
+                    groupName,
+                    groupMatches
+                });
+            }
+        });
+
+        return matches;
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+
 module.exports = {
-  getTodayMatches,
+  getTodayMatches, getCompetitionCupMatches, 
 };

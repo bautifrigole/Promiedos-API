@@ -14,7 +14,13 @@ app.get('/', function (req, res) {
 })
 
 app.get('/today-results', async (req, res) => {
-    const matches = await scraper.getTodayMatches(url);
+    const matches = await scraper.getTodayMatches(req, res);
+    res.json(matches);
+});
+
+app.get('/cup-results/:competition', async (req, res) => {
+    const competition = req.params.competition;
+    const matches = await scraper.getCompetitionCupMatches(req, res, competition);
     res.json(matches);
 });
 
