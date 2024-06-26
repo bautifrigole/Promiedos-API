@@ -7,10 +7,9 @@ require('dotenv').config()
 app.use(cors())
 
 const PORT = process.env.PORT || 3000
-const url = 'https://www.promiedos.com.ar/'
 
 app.get('/', function (req, res) {
-    res.send('Este es un webscraper del sitio https://www.promiedos.com.ar/ (para ver los resultados de los partidos de hoy, acceder a la ruta /today-results')
+    res.send("Este es un webscraper del sitio https://www.promiedos.com.ar/. \nEn la ruta `/today-results` se pueden obtener los resultados de los partidos del día. \nEn la ruta `/cup-results/<cup-name>` se pueden obtener los resultados de los partidos de una copa en particular.")
 })
 
 app.get('/today-results', async (req, res) => {
